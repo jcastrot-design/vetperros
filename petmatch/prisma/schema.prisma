@@ -1,0 +1,1023 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// SQLite no soporta enums - se usan String con valores validados en la app
+// Role: OWNER | WALKER | GROOMER | VET | SELLER | INSURANCE_PROVIDER | ADMIN
+// PetSpecies: DOG | CAT
+// PetSize: SMALL | MEDIUM | LARGE | XLARGE
+// PetSex: MALE | FEMALE
+// EnergyLevel: LOW | MEDIUM | HIGH
+// ServiceType: WALK | SITTING | DAYCARE | BOARDING | GROOMING | VET_HOME
+// BookingStatus: PENDING | CONFIRMED | IN_PROGRESS | COMPLETED | CANCELLED
+// PaymentStatus: PENDING | PROCESSING | SUCCEEDED | FAILED | REFUNDED
+// MatchAction: LIKE | PASS
+// DayOfWeek: MONDAY | TUESDAY | WEDNESDAY | THURSDAY | FRIDAY | SATURDAY | SUNDAY
+// ProviderVerification: PENDING | VERIFIED | PARTIAL | REJECTED
+// ReminderType: VACCINE | DEWORMING | MEDICATION | GROOMING | CHECKUP | CUSTOM
+// ReminderStatus: PENDING | SENT | COMPLETED | DISMISSED
+// Recurrence: NONE | DAILY | WEEKLY | MONTHLY | QUARTERLY | BIANNUAL | ANNUAL
+// IncidentCategory: PAYMENT | SERVICE | PRODUCT | PROVIDER | EMERGENCY | OTHER
+// IncidentSeverity: LOW | MEDIUM | HIGH | CRITICAL
+// IncidentStatus: OPEN | IN_PROGRESS | RESOLVED | CLOSED | ESCALATED
+// BookingEventType: CREATED | CONFIRMED | CHECKIN | STARTED | PHOTO_SENT | CHECKOUT | COMPLETED | CANCELLED | DISPUTED
+// ReportCardMood: HAPPY | NORMAL | ANXIOUS | EXCITED
+// NotificationType: BOOKING | PAYMENT | REMINDER | SYSTEM | CHAT | REVIEW
+// DocumentType: MEDICAL_RECORD | VACCINATION_CARD | PRESCRIPTION | INSURANCE | OTHER
+// ProviderDocType: ID_CARD | BACKGROUND_CHECK | CERTIFICATION | SPACE_PHOTO
+// ProviderBadgeType: IDENTITY_VERIFIED | BACKGROUND_OK | SUPER_PROVIDER | SPACE_VERIFIED | CERTIFIED | FOUNDER
+// PayoutStatus: PENDING | PROCESSING | COMPLETED | FAILED
+// MessageType: TEXT | IMAGE | FILE | SYSTEM | LOCATION
+
+// ─── AUTH (Auth.js) ─────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  name          String
+  avatarUrl     String?
+  bio           String?
+  role          String    @default("OWNER")
+  phone         String?
+  phoneVerified Boolean   @default(false)
+  expoPushToken String?
+  status        String    @default("ACTIVE") // ACTIVE | SUSPENDED | BANNED
+  latitude      Float?
+  longitude     Float?
+  city          String?
+  country       String?
+  isActive      Boolean   @default(true)
+  isBanned      Boolean   @default(false)
+  referralCode  String?   @unique
+  referredBy    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts                 Account[]
+  sessions                 Session[]
+  pets                     Pet[]
+  services                 Service[]
+  bookingsAsClient         Booking[]                 @relation("ClientBookings")
+  bookingsAsProvider       Booking[]                 @relation("ProviderBookings")
+  reviewsGiven             Review[]                  @relation("ReviewAuthor")
+  reviewsReceived          Review[]                  @relation("ReviewTarget")
+  sentSwipes               Swipe[]                   @relation("SwipeSender")
+  receivedSwipes           Swipe[]                   @relation("SwipeReceiver")
+  conversationParticipants ConversationParticipant[]
+  messages                 Message[]
+  payments                 Payment[]
+  reports                  Report[]                  @relation("ReportAuthor")
+  reportsReceived          Report[]                  @relation("ReportTarget")
+  providerProfile          ProviderProfile?
+  notifications            Notification[]
+  favorites                Favorite[]
+  incidentsReported        Incident[]                @relation("IncidentReporter")
+  incidentsResolved        Incident[]                @relation("IncidentResolver")
+  reminders                Reminder[]
+  subscription             Subscription?
+  products                 Product[]
+  orders                   Order[]
+  adoptionPosts            AdoptionPost[]            @relation("AdoptionPosts")
+  adoptionApplications     AdoptionApplication[]     @relation("AdoptionApplications")
+  lostPets                 LostPet[]                 @relation("LostPetOwner")
+  lostPetSightings         LostPetSighting[]         @relation("LostPetSightingReporter")
+  coupons                  Coupon[]
+  gameScores               GameScore[]
+  insurancePlansProvided   InsurancePlan[]    @relation("InsurancePlansProvided")
+  insurancePolicies        InsurancePolicy[]  @relation("InsurancePoliciesOwned")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── MASCOTAS ───────────────────────────────────────
+
+model Pet {
+  id                String    @id @default(cuid())
+  ownerId           String
+  name              String
+  species           String // DOG | CAT
+  breed             String?
+  sex               String? // MALE | FEMALE
+  dateOfBirth       DateTime?
+  size              String // SMALL | MEDIUM | LARGE | XLARGE
+  energyLevel       String // LOW | MEDIUM | HIGH
+  temperament       String    @default("[]") // JSON array of strings
+  age               Int?
+  weight            Float?
+  isVaccinated      Boolean   @default(false)
+  isNeutered        Boolean   @default(false)
+  microchipId       String?
+  allergies         String    @default("[]") // JSON array
+  medicalConditions String    @default("[]") // JSON array
+  diet              String?
+  description       String?
+  photos            String    @default("[]") // JSON array of URLs
+  profileCompletion Int       @default(0)
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  owner            User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  sentSwipes       Swipe[]         @relation("SwipePet")
+  targetedInSwipes Swipe[]         @relation("SwipeTargetPet")
+  vaccines         PetVaccine[]
+  documents        PetDocument[]
+  medications      PetMedication[]
+  medicalVisits      MedicalVisit[]
+  reminders          Reminder[]
+  bookings           Booking[]
+  adoptionPost       AdoptionPost?
+  insurancePolicies  InsurancePolicy[]
+
+  @@map("pets")
+}
+
+model PetVaccine {
+  id               String    @id @default(cuid())
+  petId            String
+  name             String
+  dateAdministered DateTime
+  nextDueDate      DateTime?
+  veterinarian     String?
+  notes            String?
+  documentUrl      String?
+  createdAt        DateTime  @default(now())
+
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@map("pet_vaccines")
+}
+
+model PetDocument {
+  id         String   @id @default(cuid())
+  petId      String
+  type       String // MEDICAL_RECORD | VACCINATION_CARD | PRESCRIPTION | INSURANCE | OTHER
+  title      String
+  fileUrl    String
+  uploadedAt DateTime @default(now())
+
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@map("pet_documents")
+}
+
+model PetMedication {
+  id        String    @id @default(cuid())
+  petId     String
+  name      String
+  dosage    String?
+  frequency String?
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  isActive  Boolean   @default(true)
+  notes     String?
+  createdAt DateTime  @default(now())
+
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@map("pet_medications")
+}
+
+model MedicalVisit {
+  id           String    @id @default(cuid())
+  petId        String
+  type         String // CHECKUP | EMERGENCY | SURGERY | DENTAL | VACCINATION | OTHER
+  title        String
+  description  String?
+  veterinarian String?
+  clinic       String?
+  diagnosis    String?
+  treatment    String?
+  cost         Float?
+  visitDate    DateTime
+  nextVisit    DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@map("medical_visits")
+}
+
+// ─── RECORDATORIOS ────────────────────────────────────
+
+model Reminder {
+  id           String   @id @default(cuid())
+  userId       String
+  petId        String
+  type         String // VACCINE | DEWORMING | MEDICATION | GROOMING | CHECKUP | CUSTOM
+  title        String
+  description  String?
+  dueDate      DateTime
+  recurrence   String   @default("NONE") // NONE | DAILY | WEEKLY | MONTHLY | QUARTERLY | BIANNUAL | ANNUAL
+  status       String   @default("PENDING") // PENDING | SENT | COMPLETED | DISMISSED
+  notifyBefore Int      @default(3) // días antes
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pet  Pet  @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@map("reminders")
+}
+
+// ─── PROVEEDORES ──────────────────────────────────────
+
+model ProviderProfile {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  type               String // WALKER | SITTER | GROOMER | BOARDING | VET
+  displayName        String
+  bio                String?
+  experience         Int       @default(0) // años
+  certifications     String    @default("[]") // JSON array
+  photos             String    @default("[]") // JSON array
+  coverageRadius     Int       @default(5) // km
+  verificationStatus String    @default("PENDING") // PENDING | VERIFIED | PARTIAL | REJECTED
+  verifiedAt         DateTime?
+  trustScore         Float     @default(0)
+  totalServices      Int       @default(0)
+  averageRating      Float     @default(0)
+  responseTime       Int? // minutos promedio
+  acceptanceRate     Float?
+  stripeAccountId    String?
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents ProviderDocument[]
+  badges    ProviderBadge[]
+  payouts   Payout[]
+
+  @@map("provider_profiles")
+}
+
+model ProviderDocument {
+  id         String    @id @default(cuid())
+  providerId String
+  type       String // ID_CARD | BACKGROUND_CHECK | CERTIFICATION | SPACE_PHOTO
+  fileUrl    String
+  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedAt DateTime?
+  reviewedBy String?
+  notes      String?
+  uploadedAt DateTime  @default(now())
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_documents")
+}
+
+model ProviderBadge {
+  id         String    @id @default(cuid())
+  providerId String
+  type       String // IDENTITY_VERIFIED | BACKGROUND_OK | SUPER_PROVIDER | SPACE_VERIFIED | CERTIFIED | FOUNDER
+  earnedAt   DateTime  @default(now())
+  expiresAt  DateTime?
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_badges")
+}
+
+// ─── SERVICIOS Y RESERVAS ───────────────────────────
+
+model Service {
+  id              String   @id @default(cuid())
+  providerId      String
+  type            String // WALK | SITTING | DAYCARE | BOARDING | GROOMING | VET_HOME
+  title           String
+  description     String?
+  pricePerUnit    Float
+  currency        String   @default("CLP")
+  priceUnit       String   @default("PER_HOUR") // PER_HOUR | PER_VISIT | PER_DAY | PER_NIGHT | PER_SESSION
+  duration        Int? // minutos
+  maxPets         Int      @default(1)
+  acceptedSizes   String   @default("[]") // JSON array
+  acceptedSpecies String   @default("[]") // JSON array
+  isActive        Boolean  @default(true)
+  latitude        Float?
+  longitude       Float?
+  city            String?
+  radiusKm        Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  provider     User                  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  availability ServiceAvailability[]
+  bookings     Booking[]
+
+  @@map("services")
+}
+
+model ServiceAvailability {
+  id          String @id @default(cuid())
+  serviceId   String
+  dayOfWeek   String // MONDAY | TUESDAY | ...
+  startTime   String
+  endTime     String
+  maxBookings Int    @default(1)
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("service_availability")
+}
+
+model Booking {
+  id                   String    @id @default(cuid())
+  serviceId            String
+  clientId             String
+  providerId           String
+  petId                String?
+  status               String    @default("PENDING") // PENDING | CONFIRMED | IN_PROGRESS | COMPLETED | CANCELLED
+  startDate            DateTime
+  endDate              DateTime
+  totalPrice           Float
+  serviceFee           Float     @default(0) // fee del dueño (7%)
+  platformFee          Float     @default(0) // comisión plataforma (15%)
+  providerEarnings     Float     @default(0) // lo que recibe el proveedor
+  notes                String?
+  cancellationReason   String?
+  cancelledBy          String? // USER | PROVIDER | SYSTEM
+  cancelledAt          DateTime?
+  checkinAt            DateTime?
+  checkoutAt           DateTime?
+  checkinLat           Float?
+  checkinLng           Float?
+  checkoutLat          Float?
+  checkoutLng          Float?
+  checkinPhoto         String?
+  checkoutPhoto        String?
+  // Recurrence
+  isRecurring          Boolean   @default(false)
+  recurrence           String? // WEEKLY | BIWEEKLY | MONTHLY
+  parentBookingId      String? // links to original recurring booking
+  // Teleconsulta
+  teleconsultaRoomUrl  String?
+  teleconsultaRoomName String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  service       Service        @relation(fields: [serviceId], references: [id])
+  parentBooking Booking?       @relation("RecurringBookings", fields: [parentBookingId], references: [id])
+  childBookings Booking[]      @relation("RecurringBookings")
+  client        User           @relation("ClientBookings", fields: [clientId], references: [id])
+  provider      User           @relation("ProviderBookings", fields: [providerId], references: [id])
+  pet           Pet?           @relation(fields: [petId], references: [id])
+  payment       Payment?
+  review        Review?
+  events        BookingEvent[]
+  tracking      WalkTracking?
+  reportCard    ReportCard?
+  incidents     Incident[]
+
+  @@map("bookings")
+}
+
+model BookingEvent {
+  id        String   @id @default(cuid())
+  bookingId String
+  type      String // CREATED | CONFIRMED | CHECKIN | STARTED | PHOTO_SENT | CHECKOUT | COMPLETED | CANCELLED | DISPUTED
+  data      String? // JSON metadata
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+  @@map("booking_events")
+}
+
+// ─── TRACKING ─────────────────────────────────────────
+
+model WalkTracking {
+  id            String   @id @default(cuid())
+  bookingId     String   @unique
+  coordinates   String   @default("[]") // JSON array [{lat, lng, timestamp}]
+  totalDistance Float? // metros
+  totalDuration Int? // segundos
+  startLocation String? // JSON {lat, lng}
+  endLocation   String? // JSON {lat, lng}
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("walk_tracking")
+}
+
+// ─── REPORT CARDS ────────────────────────────────────
+
+model ReportCard {
+  id         String   @id @default(cuid())
+  bookingId  String   @unique
+  mood       String // HAPPY | NORMAL | ANXIOUS | EXCITED
+  activities String   @default("[]") // JSON array: WALK, PLAY, REST, SOCIALIZED
+  didPee     Boolean  @default(false)
+  didPoop    Boolean  @default(false)
+  ateFood    Boolean  @default(false)
+  drankWater Boolean  @default(false)
+  photos     String   @default("[]") // JSON array of URLs
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("report_cards")
+}
+
+// ─── RESENAS ────────────────────────────────────────
+
+model Review {
+  id                  String    @id @default(cuid())
+  bookingId           String    @unique
+  authorId            String
+  targetId            String
+  rating              Int
+  punctualityRating   Int? // 1-5
+  careRating          Int? // 1-5
+  communicationRating Int? // 1-5
+  comment             String?
+  photos              String    @default("[]") // JSON array
+  response            String? // respuesta del proveedor
+  respondedAt         DateTime?
+  isVerified          Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  author  User    @relation("ReviewAuthor", fields: [authorId], references: [id])
+  target  User    @relation("ReviewTarget", fields: [targetId], references: [id])
+
+  @@map("reviews")
+}
+
+// ─── VETERINARIAS ───────────────────────────────────
+
+model VetClinic {
+  id           String   @id @default(cuid())
+  userId       String?  @unique
+  name         String
+  address      String
+  latitude     Float
+  longitude    Float
+  phone        String?
+  website      String?
+  is24h        Boolean  @default(false)
+  openingHours String? // JSON object
+  photos       String   @default("[]") // JSON array
+  services     String   @default("[]") // JSON array
+  isVerified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("vet_clinics")
+}
+
+// ─── MATCHING ───────────────────────────────────────
+
+model Swipe {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  petId       String
+  targetPetId String
+  action      String // LIKE | PASS
+  createdAt   DateTime @default(now())
+
+  sender    User @relation("SwipeSender", fields: [senderId], references: [id])
+  receiver  User @relation("SwipeReceiver", fields: [receiverId], references: [id])
+  pet       Pet  @relation("SwipePet", fields: [petId], references: [id])
+  targetPet Pet  @relation("SwipeTargetPet", fields: [targetPetId], references: [id])
+
+  @@unique([petId, targetPetId])
+  @@map("swipes")
+}
+
+// ─── CHAT ───────────────────────────────────────────
+
+model Conversation {
+  id        String   @id @default(cuid())
+  type      String   @default("MATCH") // MATCH | BOOKING | SUPPORT
+  bookingId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String    @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime  @default(now())
+  lastReadAt     DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  type           String   @default("TEXT") // TEXT | IMAGE | FILE | SYSTEM | LOCATION
+  content        String
+  mediaUrl       String?
+  status         String   @default("SENT") // SENT | DELIVERED | READ
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+// ─── PAGOS ──────────────────────────────────────────
+
+model Payment {
+  id                  String    @id @default(cuid())
+  bookingId           String    @unique
+  userId              String
+  stripeSessionId     String?   @unique
+  stripePaymentIntent String?   @unique
+  amount              Float
+  currency            String    @default("CLP")
+  status              String    @default("PENDING") // PENDING | PROCESSING | SUCCEEDED | FAILED | REFUNDED
+  method              String    @default("CARD") // CARD | WALLET | TRANSFER
+  refundAmount        Float?
+  refundReason        String?
+  refundedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("payments")
+}
+
+model Payout {
+  id             String    @id @default(cuid())
+  providerId     String
+  amount         Float
+  currency       String    @default("CLP")
+  status         String    @default("PENDING") // PENDING | PROCESSING | COMPLETED | FAILED
+  stripePayoutId String?
+  periodStart    DateTime
+  periodEnd      DateTime
+  bookingIds     String    @default("[]") // JSON array
+  scheduledAt    DateTime
+  completedAt    DateTime?
+  failureReason  String?
+  createdAt      DateTime  @default(now())
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("payouts")
+}
+
+// ─── FAVORITOS ──────────────────────────────────────
+
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String
+  providerId String?
+  serviceId  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, providerId])
+  @@unique([userId, serviceId])
+  @@map("favorites")
+}
+
+// ─── NOTIFICACIONES ─────────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // BOOKING | PAYMENT | REMINDER | SYSTEM | CHAT | REVIEW
+  title     String
+  body      String
+  data      String? // JSON deep link info
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ─── INCIDENTES ─────────────────────────────────────
+
+model Incident {
+  id          String    @id @default(cuid())
+  reporterId  String
+  bookingId   String?
+  category    String // PAYMENT | SERVICE | PRODUCT | PROVIDER | EMERGENCY | OTHER
+  severity    String    @default("LOW") // LOW | MEDIUM | HIGH | CRITICAL
+  status      String    @default("OPEN") // OPEN | IN_PROGRESS | RESOLVED | CLOSED | ESCALATED
+  description String
+  evidence    String    @default("[]") // JSON array of URLs
+  resolution  String?
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  reporter User     @relation("IncidentReporter", fields: [reporterId], references: [id])
+  resolver User?    @relation("IncidentResolver", fields: [resolvedBy], references: [id])
+  booking  Booking? @relation(fields: [bookingId], references: [id])
+
+  @@map("incidents")
+}
+
+// ─── REPORTES / MODERACION ──────────────────────────
+
+model Report {
+  id          String   @id @default(cuid())
+  authorId    String
+  targetId    String
+  reason      String
+  description String?
+  isResolved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  author User @relation("ReportAuthor", fields: [authorId], references: [id])
+  target User @relation("ReportTarget", fields: [targetId], references: [id])
+
+  @@map("reports")
+}
+
+model Referral {
+  id          String   @id @default(cuid())
+  referrerId  String
+  referredId  String
+  status      String   @default("PENDING") // PENDING | COMPLETED | REWARDED
+  rewardGiven Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@unique([referrerId, referredId])
+  @@map("referrals")
+}
+
+// ─── SUSCRIPCIONES ─────────────────────────────────
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  plan                 String    @default("FREE") // FREE | PREMIUM | PRO
+  stripeSubscriptionId String?   @unique
+  stripeCustomerId     String?
+  status               String    @default("ACTIVE") // ACTIVE | PAST_DUE | CANCELLED | EXPIRED
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+// ─── MARKETPLACE ───────────────────────────────────
+
+model Product {
+  id              String   @id @default(cuid())
+  sellerId        String
+  title           String
+  description     String?
+  price           Float
+  currency        String   @default("CLP")
+  category        String // FOOD | TREATS | TOYS | ACCESSORIES | HEALTH | GROOMING | OTHER
+  photos          String   @default("[]") // JSON array of URLs
+  stock           Int      @default(0)
+  isActive        Boolean  @default(true)
+  petSpecies      String   @default("[]") // JSON array: ["DOG", "CAT", ...]
+  approvalStatus  String   @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | REJECTED
+  rejectionReason String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  seller     User        @relation(fields: [sellerId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([approvalStatus, isActive])
+  @@map("products")
+}
+
+model Order {
+  id              String    @id @default(cuid())
+  buyerId         String
+  status          String    @default("PENDING") // PENDING | PAID | SHIPPED | DELIVERED | CANCELLED
+  totalAmount     Float
+  discountAmount  Float     @default(0)
+  couponCode      String?
+  shippingAddress String?
+  stripeSessionId String?
+  payoutStatus    String    @default("HELD") // HELD | RELEASED
+  buyerRating     Int? // 1-5
+  buyerReview     String?
+  ratedAt         DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  buyer User        @relation(fields: [buyerId], references: [id])
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+// ─── JUEGO ───────────────────────────────────────────
+// ScoreThresholds: 200 = 5% | 500 = 10% | 1000 = 15%
+
+model Coupon {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  userId    String
+  discount  Int       // porcentaje: 5 | 10 | 15
+  minScore  Int
+  usedAt    DateTime?
+  usedBy    String?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("coupons")
+}
+
+model GameScore {
+  id        String   @id @default(cuid())
+  userId    String
+  score     Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("game_scores")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Float
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// ─── ADOPCIONES ─────────────────────────────────────
+// AdoptionPostStatus: DRAFT | ACTIVE | PAUSED | ADOPTED | CANCELLED
+// AdoptionReason: MOVING | ALLERGY | TIME | FINANCIAL | FOUND_STRAY | RESCUE | OTHER
+// AdoptionApplicationStatus: PENDING | REVIEWED | APPROVED | REJECTED | WITHDRAWN
+// HousingSituation: HOUSE | APARTMENT | FARM | OTHER
+
+model AdoptionPost {
+  id           String    @id @default(cuid())
+  petId        String    @unique
+  posterId     String
+  status       String    @default("ACTIVE") // DRAFT | ACTIVE | PAUSED | ADOPTED | CANCELLED
+  reason       String    @default("OTHER") // MOVING | ALLERGY | TIME | FINANCIAL | FOUND_STRAY | RESCUE | OTHER
+  adoptionFee  Float     @default(0)
+  currency     String    @default("CLP")
+  city         String?
+  country      String?
+  isUrgent     Boolean   @default(false)
+  isFosterOnly Boolean   @default(false)
+  description  String?
+  requirements String    @default("[]") // JSON array of strings
+  viewCount    Int       @default(0)
+  adoptedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  pet          Pet                   @relation(fields: [petId], references: [id], onDelete: Cascade)
+  poster       User                  @relation("AdoptionPosts", fields: [posterId], references: [id])
+  applications AdoptionApplication[]
+
+  @@index([status, city])
+  @@index([posterId])
+  @@map("adoption_posts")
+}
+
+model AdoptionApplication {
+  id               String    @id @default(cuid())
+  postId           String
+  applicantId      String
+  status           String    @default("PENDING") // PENDING | REVIEWED | APPROVED | REJECTED | WITHDRAWN
+  message          String?
+  housingSituation String? // HOUSE | APARTMENT | FARM | OTHER
+  hasYard          Boolean?
+  hasOtherPets     Boolean?
+  otherPetsInfo    String?
+  hasChildren      Boolean?
+  childrenAges     String?
+  workSchedule     String?
+  experience       String?
+  reviewedAt       DateTime?
+  reviewNotes      String?
+  conversationId   String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  post      AdoptionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  applicant User         @relation("AdoptionApplications", fields: [applicantId], references: [id])
+
+  @@unique([postId, applicantId])
+  @@index([applicantId, status])
+  @@map("adoption_applications")
+}
+
+// ─── MASCOTAS PERDIDAS ───────────────────────────────
+// LostPetStatus: LOST | FOUND | REUNITED
+
+model LostPet {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  species         String // DOG | CAT | OTHER
+  breed           String?
+  color           String?
+  size            String? // SMALL | MEDIUM | LARGE | XLARGE
+  description     String?
+  photos          String   @default("[]")
+  lastSeenAt      DateTime
+  lastSeenAddress String?
+  lastSeenLat     Float?
+  lastSeenLng     Float?
+  city            String?
+  reward          Float?
+  status          String   @default("LOST") // LOST | FOUND | REUNITED
+  isUrgent        Boolean  @default(false)
+  viewCount       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  owner     User              @relation("LostPetOwner", fields: [userId], references: [id])
+  sightings LostPetSighting[]
+
+  @@index([status, city])
+  @@index([userId])
+  @@map("lost_pets")
+}
+
+model LostPetSighting {
+  id          String   @id @default(cuid())
+  lostPetId   String
+  reporterId  String
+  description String?
+  photo       String?
+  lat         Float?
+  lng         Float?
+  address     String?
+  seenAt      DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  lostPet  LostPet @relation(fields: [lostPetId], references: [id], onDelete: Cascade)
+  reporter User    @relation("LostPetSightingReporter", fields: [reporterId], references: [id])
+
+  @@index([lostPetId])
+  @@map("lost_pet_sightings")
+}
+
+// ─── SEGUROS ─────────────────────────────────────────
+// InsurancePlanStatus: PENDING_REVIEW | APPROVED | REJECTED
+// InsurancePolicyStatus: PENDING_PAYMENT | ACTIVE | CANCELLED | EXPIRED
+
+model InsurancePlan {
+  id              String   @id @default(cuid())
+  providerId      String
+  name            String
+  description     String
+  providerName    String
+  price           Float                        // precio mensual en CLP
+  annualPrice     Float?                       // precio anual (si aplica)
+  currency        String   @default("CLP")
+  coverages       String   @default("[]")      // JSON array de strings ["Urgencias", "Accidentes"...]
+  petSpecies      String   @default("[]")      // JSON array ["DOG", "CAT", ...]
+  maxAgeMonths    Int?                         // edad máxima del animal en meses
+  deductible      Float?                       // deducible por siniestro en CLP
+  maxCoverage     Float?                       // cobertura máxima por incidente en CLP
+  commissionRate  Float    @default(0.15)      // comisión PetMatch (15%)
+  isActive        Boolean  @default(true)
+  approvalStatus  String   @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | REJECTED
+  rejectionReason String?
+  approvedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  provider User              @relation("InsurancePlansProvided", fields: [providerId], references: [id])
+  policies InsurancePolicy[]
+
+  @@index([approvalStatus, isActive])
+  @@map("insurance_plans")
+}
+
+model InsurancePolicy {
+  id               String    @id @default(cuid())
+  userId           String
+  planId           String
+  petId            String
+  status           String    @default("PENDING_PAYMENT") // PENDING_PAYMENT | ACTIVE | CANCELLED | EXPIRED
+  startDate        DateTime?
+  endDate          DateTime?
+  autoRenew        Boolean   @default(true)
+  totalPaid        Float     @default(0)
+  platformFee      Float     @default(0)
+  providerEarnings Float     @default(0)
+  stripeSessionId  String?   @unique
+  cancelledAt      DateTime?
+  cancelReason     String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user     User                     @relation("InsurancePoliciesOwned", fields: [userId], references: [id])
+  plan     InsurancePlan            @relation(fields: [planId], references: [id])
+  pet      Pet                      @relation(fields: [petId], references: [id])
+  payments InsurancePolicyPayment[]
+
+  @@index([userId, status])
+  @@index([petId])
+  @@map("insurance_policies")
+}
+
+model InsurancePolicyPayment {
+  id               String    @id @default(cuid())
+  policyId         String
+  amount           Float
+  platformFee      Float     @default(0)
+  providerEarnings Float     @default(0)
+  status           String    @default("PENDING") // PENDING | SUCCEEDED | FAILED
+  stripeSessionId  String?   @unique
+  period           String                        // "2025-03" mes que cubre
+  paidAt           DateTime?
+  createdAt        DateTime  @default(now())
+
+  policy InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@index([policyId])
+  @@map("insurance_policy_payments")
+}

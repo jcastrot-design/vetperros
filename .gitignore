@@ -1,0 +1,38 @@
+# Dependencies
+**/node_modules/
+**/.pnp
+**/.pnp.js
+
+# Next.js
+petmatch/.next/
+petmatch/out/
+
+# Expo / React Native
+vetperros-mobile/.expo/
+vetperros-mobile/dist/
+vetperros-mobile/ios/
+vetperros-mobile/android/
+
+# Build outputs
+**/build/
+**/dist/
+
+# Environment variables
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Prisma generated client
+petmatch/src/generated/
+
+# Logs
+**/*.log
+**/npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

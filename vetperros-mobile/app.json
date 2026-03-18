@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "VetPerros",
+    "slug": "vetperros-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "vetperros",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f97316"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.vetperros.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "VetPerros usa la cámara para agregar fotos de tu mascota",
+        "NSMicrophoneUsageDescription": "VetPerros usa el micrófono para las teleconsultas",
+        "NSPhotoLibraryUsageDescription": "VetPerros accede a tus fotos para el perfil de tu mascota",
+        "NSLocationWhenInUseUsageDescription": "VetPerros usa tu ubicación para encontrar servicios cercanos",
+        "UIBackgroundModes": ["audio", "fetch", "remote-notification"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#f97316"
+      },
+      "package": "com.vetperros.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "READ_MEDIA_IMAGES"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_ANDROID_MAPS_API_KEY"
+        }
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "VetPerros necesita tu ubicación para servicios cercanos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "VetPerros accede a tus fotos para el perfil de tu mascota."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
