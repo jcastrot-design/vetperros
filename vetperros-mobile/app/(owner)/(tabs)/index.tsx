@@ -88,24 +88,48 @@ export default function DashboardScreen() {
 
         {/* Stats */}
         <View style={{ flexDirection: "row", gap: 10, paddingHorizontal: 16, paddingVertical: 12 }}>
-          <View style={{ flex: 1, backgroundColor: "#fff7ed", borderRadius: 16, padding: 14, alignItems: "center" }}>
+          <Pressable
+            onPress={() => router.push("/(owner)/(tabs)/pets")}
+            style={{ flex: 1, backgroundColor: "#fff7ed", borderRadius: 16, padding: 14, alignItems: "center" }}
+          >
             <Text style={{ fontSize: 24 }}>🐾</Text>
             <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827", marginTop: 4 }}>{pets.length}</Text>
             <Text style={{ fontSize: 11, color: "#6b7280", fontWeight: "500" }}>Mascotas</Text>
-          </View>
-          <View style={{ flex: 1, backgroundColor: "#eff6ff", borderRadius: 16, padding: 14, alignItems: "center" }}>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/(owner)/bookings")}
+            style={{ flex: 1, backgroundColor: "#eff6ff", borderRadius: 16, padding: 14, alignItems: "center" }}
+          >
             <Text style={{ fontSize: 24 }}>📅</Text>
             <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827", marginTop: 4 }}>{bookings.length}</Text>
             <Text style={{ fontSize: 11, color: "#6b7280", fontWeight: "500" }}>Reservas</Text>
-          </View>
+          </Pressable>
           <Pressable
-            onPress={() => router.push("/(owner)/(tabs)/services")}
-            style={{ flex: 1, backgroundColor: "#f97316", borderRadius: 16, alignItems: "center", justifyContent: "center", paddingVertical: 14 }}
+            onPress={() => router.push("/(owner)/bookings")}
+            style={{ flex: 1, backgroundColor: "#f0fdf4", borderRadius: 16, padding: 14, alignItems: "center" }}
           >
-            <Search size={20} color="#fff" />
-            <Text style={{ fontSize: 11, color: "#fff", fontWeight: "700", marginTop: 4 }}>Buscar</Text>
+            <Text style={{ fontSize: 24 }}>✅</Text>
+            <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827", marginTop: 4 }}>{active.length}</Text>
+            <Text style={{ fontSize: 11, color: "#6b7280", fontWeight: "500" }}>Activas</Text>
           </Pressable>
         </View>
+
+        {/* Empty state para usuario nuevo */}
+        {pets.length === 0 && bookings.length === 0 && (
+          <View style={{ marginHorizontal: 16, marginBottom: 8, backgroundColor: "#fff7ed", borderRadius: 20, padding: 24, alignItems: "center", borderWidth: 1, borderColor: "#fed7aa" }}>
+            <Text style={{ fontSize: 40, marginBottom: 12 }}>🐾</Text>
+            <Text style={{ fontSize: 18, fontWeight: "800", color: "#111827", textAlign: "center" }}>¡Bienvenido a VetPerros!</Text>
+            <Text style={{ fontSize: 13, color: "#6b7280", textAlign: "center", marginTop: 6, lineHeight: 20 }}>
+              Empieza agregando a tu mascota para acceder a todos los servicios
+            </Text>
+            <Pressable
+              onPress={() => router.push("/(owner)/new-pet")}
+              style={{ marginTop: 16, backgroundColor: "#f97316", borderRadius: 14, paddingHorizontal: 28, paddingVertical: 12 }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>+ Agregar mi primera mascota</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Servicio en curso */}
         {inProgress.map((b: any) => (
@@ -240,14 +264,7 @@ export default function DashboardScreen() {
               style={{ flex: 1, backgroundColor: "#fff7ed", borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1, borderColor: "#fed7aa" }}
             >
               <Text style={{ fontSize: 28 }}>🐾</Text>
-              <Text style={{ fontSize: 11, fontWeight: "600", color: "#374151", marginTop: 6, textAlign: "center" }}>Agregar mascota</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => router.push("/(owner)/(tabs)/services")}
-              style={{ flex: 1, backgroundColor: "#eff6ff", borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1, borderColor: "#bfdbfe" }}
-            >
-              <Text style={{ fontSize: 28 }}>🔍</Text>
-              <Text style={{ fontSize: 11, fontWeight: "600", color: "#374151", marginTop: 6, textAlign: "center" }}>Buscar servicio</Text>
+              <Text style={{ fontSize: 11, fontWeight: "600", color: "#374151", marginTop: 6, textAlign: "center" }}>Nueva mascota</Text>
             </Pressable>
             <Pressable
               onPress={() => router.push("/(owner)/bookings")}
@@ -255,6 +272,13 @@ export default function DashboardScreen() {
             >
               <Text style={{ fontSize: 28 }}>📅</Text>
               <Text style={{ fontSize: 11, fontWeight: "600", color: "#374151", marginTop: 6, textAlign: "center" }}>Mis reservas</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/(owner)/profile")}
+              style={{ flex: 1, backgroundColor: "#f5f3ff", borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1, borderColor: "#ddd6fe" }}
+            >
+              <Text style={{ fontSize: 28 }}>👤</Text>
+              <Text style={{ fontSize: 11, fontWeight: "600", color: "#374151", marginTop: 6, textAlign: "center" }}>Mi perfil</Text>
             </Pressable>
           </View>
           <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>

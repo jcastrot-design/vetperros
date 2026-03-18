@@ -140,7 +140,10 @@ export default function Services() {
             {CATEGORIES.map((c) => (
               <Pressable
                 key={String(c.key)}
-                onPress={() => setActiveType(c.key)}
+                onPress={() => {
+                  if (c.key === "INSURANCE") { router.push("/(owner)/insurance/plans"); return; }
+                  setActiveType(c.key);
+                }}
                 style={{
                   backgroundColor: activeType === c.key ? "#fff7ed" : "#fff",
                   borderRadius: 12, padding: 12, alignItems: "center", width: "30%",

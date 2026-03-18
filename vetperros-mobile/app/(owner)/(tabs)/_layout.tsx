@@ -27,13 +27,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="marketplace"
-        options={{
-          title: "Marketplace",
-          tabBarIcon: ({ color }) => <TabIcon icon={ShoppingBag} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="services"
         options={{
           title: "Servicios",
@@ -41,17 +34,24 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat"
-        options={{
-          title: "Mensajes",
-          tabBarIcon: ({ color }) => <TabIcon icon={MessageCircle} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="pets"
         options={{
           title: "Mascotas",
           tabBarIcon: ({ color }) => <TabIcon icon={PawPrint} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="marketplace"
+        options={{
+          title: "Marketplace",
+          tabBarIcon: ({ color }) => <TabIcon icon={ShoppingBag} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: "Mensajes",
+          tabBarIcon: ({ color }) => <TabIcon icon={MessageCircle} color={color} />,
         }}
       />
     </Tabs>
