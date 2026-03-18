@@ -280,6 +280,16 @@ export default function DashboardScreen() {
               <Text style={{ fontSize: 11, fontWeight: "600", color: "#374151", marginTop: 6, textAlign: "center" }}>Recordatorios</Text>
             </Pressable>
           </View>
+          <Pressable
+            onPress={() => router.push("/(owner)/game")}
+            style={{ marginTop: 10, backgroundColor: "#1a1a2e", borderRadius: 14, padding: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderWidth: 1, borderColor: "#00c8b4" }}
+          >
+            <Text style={{ fontSize: 22 }}>🎮</Text>
+            <View>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: "#00c8b4" }}>Perro Corredor</Text>
+              <Text style={{ fontSize: 11, color: "#9ca3af" }}>Juega y gana cupones de descuento</Text>
+            </View>
+          </Pressable>
         </View>
 
         {/* Historial reciente */}

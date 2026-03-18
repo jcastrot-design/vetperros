@@ -60,6 +60,10 @@ export default function OwnerLayout() {
         name="insurance/my-policies"
         options={{ headerShown: true, title: "Mis Seguros", headerBackTitle: "Atrás" }}
       />
+      <Stack.Screen
+        name="game"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }
