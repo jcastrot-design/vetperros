@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
 import { View, Text, Pressable, Dimensions, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { Trophy, Gift, X, RotateCcw } from "lucide-react-native";
 const { width: SW } = Dimensions.get("window");
 const GW = Math.min(SW - 24, 420);
 const GH = 190;
-const GY = 148;          // ground line Y from top of game area
+const GY = 148;
 const DOG_X = 62;
 const DOG_W = 34;
 const DOG_H = 34;
@@ -20,7 +20,7 @@ const DBL_VEL = -510;
 const INIT_SPD = 230;
 const MAX_SPD = 720;
 const SPD_INC = 13;
-const SPF = 10;           // score per second
+const SPF = 10;
 const MILESTONES = [100, 250, 500, 1000, 2500];
 
 const OBS_TYPES = [
@@ -29,32 +29,32 @@ const OBS_TYPES = [
   { type: "shampoo", emoji: "🧴", w: 28, h: 46 },
 ];
 
-// ── GAME STATE ────────────────────────────────────────────────────────────────
+interface Obs { id: number; x: number; emoji: string; w: number; h: number; }
 interface GState {
   dogY: number; dogVY: number; jumpsUsed: number; onGround: boolean;
-  obs: { id: number; x: number; type: string; emoji: string; w: number; h: number }[];
-  score: number; speed: number; phase: "start" | "playing" | "dead";
+  obs: Obs[]; score: number; speed: number;
+  phase: "start" | "playing" | "dead";
   spawnT: number; nextSpawn: number; lastId: number; animT: number;
   milestoneMsg: string; milestoneT: number;
 }
 
-function initState(): GState {
+function fresh(): GState {
   return {
     dogY: GY - DOG_H, dogVY: 0, jumpsUsed: 0, onGround: true,
-    obs: [], score: 0, speed: INIT_SPD,
-    phase: "start", spawnT: 0, nextSpawn: 1200,
-    lastId: 0, animT: 0, milestoneMsg: "", milestoneT: 0,
+    obs: [], score: 0, speed: INIT_SPD, phase: "start",
+    spawnT: 0, nextSpawn: 1200, lastId: 0, animT: 0,
+    milestoneMsg: "", milestoneT: 0,
   };
 }
 
-function getObsType(score: number) {
+function pickObs(score: number) {
   const pool = [OBS_TYPES[0], OBS_TYPES[0]];
   if (score >= 300) pool.push(OBS_TYPES[1]);
   if (score >= 600) pool.push(OBS_TYPES[2]);
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function getNextSpawn(speed: number) {
+function nextSpawnMs(speed: number) {
   const t = (speed - INIT_SPD) / (MAX_SPD - INIT_SPD);
   return (1400 - 600 * Math.min(1, t)) + (Math.random() - 0.5) * 300;
 }
@@ -68,14 +68,17 @@ type CouponResult =
 
 export default function GameScreen() {
   const queryClient = useQueryClient();
-  const gs = useRef<GState>(initState());
-  const rafRef = useRef<any>(null);
+
+  // All game physics in a mutable ref — no re-render overhead
+  const g = useRef<GState>(fresh());
+  const rafRef = useRef<number>(0);
   const lastTRef = useRef<number>(0);
   const milestonesHit = useRef(new Set<number>());
+  const deadReported = useRef(false);
 
-  // Render trigger — we only call setState when something visual changes
-  const [renderKey, setRenderKey] = useState(0);
-  const tick = useCallback(() => setRenderKey(k => k + 1), []);
+  // Single state counter to trigger a re-render each frame
+  const [, setTick] = useState(0);
+  const tick = () => setTick(n => n + 1);
 
   const [couponResult, setCouponResult] = useState<CouponResult>(null);
   const [finalScore, setFinalScore] = useState(0);
@@ -100,116 +103,116 @@ export default function GameScreen() {
     },
   });
 
-  // ── GAME LOOP ───────────────────────────────────────────────────────────────
+  // Keep mutation ref stable so game loop can call it without stale closure
+  const mutatRef = useRef(scoreMutation.mutate);
+  mutatRef.current = scoreMutation.mutate;
+
+  // ── GAME LOOP ──────────────────────────────────────────────────────────────
   useEffect(() => {
     function loop(ts: number) {
+      const s = g.current;
       const dt = Math.min((ts - lastTRef.current) / 1000, 0.05);
       lastTRef.current = ts;
-      const g = gs.current;
 
-      if (g.phase !== "playing") { rafRef.current = requestAnimationFrame(loop); return; }
+      if (s.phase !== "playing") {
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
 
-      g.animT += dt;
-      g.speed = Math.min(MAX_SPD, g.speed + SPD_INC * dt);
-      g.score += SPF * dt;
+      s.animT += dt;
+      s.speed = Math.min(MAX_SPD, s.speed + SPD_INC * dt);
+      s.score += SPF * dt;
 
       // Dog physics
-      if (!g.onGround) {
-        g.dogVY += GRAVITY * dt;
-        g.dogY += g.dogVY * dt;
-        if (g.dogY >= GY - DOG_H) {
-          g.dogY = GY - DOG_H;
-          g.dogVY = 0;
-          g.jumpsUsed = 0;
-          g.onGround = true;
-        }
+      s.dogVY += GRAVITY * dt;
+      s.dogY += s.dogVY * dt;
+      if (s.dogY >= GY - DOG_H) {
+        s.dogY = GY - DOG_H;
+        s.dogVY = 0;
+        s.jumpsUsed = 0;
+        s.onGround = true;
       }
 
-      // Obstacle spawn
-      g.spawnT += dt * 1000;
-      if (g.spawnT >= g.nextSpawn) {
-        g.spawnT = 0;
-        g.nextSpawn = getNextSpawn(g.speed);
-        const ot = getObsType(g.score);
-        g.obs.push({ id: ++g.lastId, x: GW + 20, ...ot });
+      // Spawn
+      s.spawnT += dt * 1000;
+      if (s.spawnT >= s.nextSpawn) {
+        s.spawnT = 0;
+        s.nextSpawn = nextSpawnMs(s.speed);
+        const ot = pickObs(s.score);
+        s.obs.push({ id: ++s.lastId, x: GW + 20, emoji: ot.emoji, w: ot.w, h: ot.h });
       }
 
-      // Move obstacles + despawn
-      g.obs = g.obs.filter(o => {
-        o.x -= g.speed * dt;
-        return o.x + o.w > -20;
-      });
+      // Move + despawn
+      s.obs = s.obs.filter(o => { o.x -= s.speed * dt; return o.x + o.w > -20; });
 
-      // Collision detection
-      const dogLeft = DOG_X + 6;
-      const dogRight = DOG_X + DOG_W - 6;
-      const dogTop = g.dogY + 6;
-      const dogBot = g.dogY + DOG_H;
-      for (const o of g.obs) {
-        const obsTop = GY - o.h + 4;
-        if (dogRight > o.x + 4 && dogLeft < o.x + o.w - 4 && dogBot > obsTop && dogTop < GY) {
-          g.phase = "dead";
-          scoreMutation.mutate(Math.floor(g.score));
-          tick();
-          rafRef.current = requestAnimationFrame(loop);
-          return;
+      // Collision
+      const dl = DOG_X + 6, dr = DOG_X + DOG_W - 8;
+      const dt2 = s.dogY + 5, db = s.dogY + DOG_H - 2;
+      for (const o of s.obs) {
+        const ol = o.x + 4, or2 = o.x + o.w - 4;
+        const ot2 = GY - o.h + 6;
+        if (dr > ol && dl < or2 && db > ot2 && dt2 < GY) {
+          s.phase = "dead";
+          if (!deadReported.current) {
+            deadReported.current = true;
+            mutatRef.current(Math.floor(s.score));
+          }
+          break;
         }
       }
 
       // Milestones
       for (const m of MILESTONES) {
-        if (g.score >= m && !milestonesHit.current.has(m)) {
+        if (s.score >= m && !milestonesHit.current.has(m)) {
           milestonesHit.current.add(m);
-          g.milestoneMsg = `¡${m}!`;
-          g.milestoneT = 1.5;
+          s.milestoneMsg = `¡${m}!`;
+          s.milestoneT = 1.5;
         }
       }
-      if (g.milestoneT > 0) g.milestoneT -= dt;
+      if (s.milestoneT > 0) s.milestoneT -= dt;
 
       tick();
       rafRef.current = requestAnimationFrame(loop);
     }
 
     rafRef.current = requestAnimationFrame(loop);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
-  // ── INPUT ───────────────────────────────────────────────────────────────────
-  function handleTap() {
-    const g = gs.current;
-    if (g.phase === "start") {
-      gs.current = { ...initState(), phase: "playing" };
-      milestonesHit.current.clear();
-      lastTRef.current = performance.now();
-      setCouponResult(null);
-      tick();
-    } else if (g.phase === "playing") {
-      if (g.jumpsUsed === 0) { g.dogVY = JUMP_VEL; g.jumpsUsed = 1; g.onGround = false; }
-      else if (g.jumpsUsed === 1) { g.dogVY = DBL_VEL; g.jumpsUsed = 2; }
-    } else if (g.phase === "dead") {
-      gs.current = { ...initState(), phase: "playing" };
-      milestonesHit.current.clear();
-      lastTRef.current = performance.now();
-      setCouponResult(null);
-      tick();
-    }
-  }
-
-  function handleRestart() {
-    gs.current = { ...initState(), phase: "playing" };
+  // ── INPUT ──────────────────────────────────────────────────────────────────
+  function startNew() {
+    const s = fresh();
+    s.phase = "playing";
+    g.current = s;
     milestonesHit.current.clear();
-    lastTRef.current = performance.now();
+    deadReported.current = false;
+    lastTRef.current = 0;
     setCouponResult(null);
+    setFinalScore(0);
     tick();
   }
 
-  const g = gs.current;
+  function handleTap() {
+    const s = g.current;
+    if (s.phase === "start" || s.phase === "dead") {
+      startNew();
+    } else if (s.phase === "playing") {
+      if (s.jumpsUsed === 0) {
+        s.dogVY = JUMP_VEL;
+        s.jumpsUsed = 1;
+        s.onGround = false;
+      } else if (s.jumpsUsed === 1) {
+        s.dogVY = DBL_VEL;
+        s.jumpsUsed = 2;
+      }
+    }
+  }
+
+  // ── RENDER ─────────────────────────────────────────────────────────────────
+  const s = g.current;
   const topScore = (gameData as any)?.topScore ?? 0;
   const coupons: any[] = (gameData as any)?.coupons ?? [];
-
-  // Dog bounce animation when on ground
-  const isRunning = g.phase === "playing" && g.onGround;
-  const bounceOffset = isRunning ? Math.sin(g.animT * 12) * 2 : 0;
+  const bounceY = s.phase === "playing" && s.onGround ? Math.sin(s.animT * 12) * 2 : 0;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#1a1a2e" }}>
@@ -222,82 +225,91 @@ export default function GameScreen() {
         </Pressable>
       </View>
 
-      {/* Game area */}
+      {/* ── GAME AREA — Pressable wraps everything, overlays have pointerEvents="none" ── */}
       <Pressable onPress={handleTap} style={{ marginHorizontal: 12 }}>
-        <View style={{ width: GW, height: GH, backgroundColor: "#f0ede6", borderRadius: 16, overflow: "hidden", position: "relative" }}>
+        <View style={{ width: GW, height: GH, backgroundColor: "#e8e4dc", borderRadius: 16, overflow: "hidden" }}>
 
-          {/* Sky gradient stripe */}
-          <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: GY - 24, backgroundColor: "#e8e4dc" }} />
+          {/* Sky */}
+          <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: GH - GY, backgroundColor: "#f0ede6" }} />
 
           {/* Decorative crosses */}
           {[80, 200, 340].map(cx => (
-            <View key={cx} style={{ position: "absolute", top: 18, left: cx, width: 4, height: 20, backgroundColor: "rgba(0,200,180,0.15)" }}>
-              <View style={{ position: "absolute", top: 8, left: -8, width: 20, height: 4, backgroundColor: "rgba(0,200,180,0.15)" }} />
+            <View key={cx} style={{ position: "absolute", top: 18, left: cx }}>
+              <View style={{ width: 4, height: 20, backgroundColor: "rgba(0,200,180,0.18)" }} />
+              <View style={{ position: "absolute", top: 8, left: -8, width: 20, height: 4, backgroundColor: "rgba(0,200,180,0.18)" }} />
             </View>
           ))}
 
           {/* Ground */}
-          <View style={{ position: "absolute", top: GY, left: 0, right: 0, height: GH - GY, backgroundColor: "#c8c4bc" }} />
           <View style={{ position: "absolute", top: GY, left: 0, right: 0, height: 2, backgroundColor: "#b0aca4" }} />
-
-          {/* Ground tiles */}
-          {Array.from({ length: 8 }, (_, i) => (
-            <View key={i} style={{ position: "absolute", top: GY, left: i * (GW / 7) - (g.animT * INIT_SPD) % (GW / 7), width: 2, height: GH - GY, backgroundColor: "#b0aca4" }} />
-          ))}
+          <View style={{ position: "absolute", top: GY + 2, left: 0, right: 0, bottom: 0, backgroundColor: "#c8c4bc" }} />
 
           {/* Score */}
-          {g.phase !== "start" && (
-            <Text style={{ position: "absolute", top: 8, right: 12, fontSize: 12, fontWeight: "700", color: "#555", fontVariant: ["tabular-nums"] }}>
-              {Math.floor(g.score).toString().padStart(5, "0")}
+          {s.phase !== "start" && (
+            <Text style={{ position: "absolute", top: 8, right: 12, fontSize: 12, fontWeight: "700", color: "#555" }}>
+              {String(Math.floor(s.score)).padStart(5, "0")}
             </Text>
           )}
 
-          {/* Milestone flash */}
-          {g.milestoneT > 0 && (
-            <Text style={{ position: "absolute", top: GH / 2 - 40, left: 0, right: 0, textAlign: "center", fontSize: 22, fontWeight: "800", color: "#00c8b4", opacity: Math.min(1, g.milestoneT) }}>
-              {g.milestoneMsg}
-            </Text>
+          {/* Milestone flash — pointerEvents none so tap still works */}
+          {s.milestoneT > 0 && (
+            <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ fontSize: 22, fontWeight: "800", color: "#00c8b4", opacity: Math.min(1, s.milestoneT) }}>
+                {s.milestoneMsg}
+              </Text>
+            </View>
           )}
 
           {/* Dog */}
-          <Text style={{ position: "absolute", left: DOG_X, top: g.dogY + bounceOffset, fontSize: 30, transform: g.phase === "dead" ? [{ rotate: "90deg" }] : [] }}>
+          <Text style={{
+            position: "absolute",
+            left: DOG_X,
+            top: s.dogY + bounceY,
+            fontSize: 30,
+            transform: s.phase === "dead" ? [{ rotate: "90deg" }] : [],
+          }}>
             🐕
           </Text>
 
           {/* Obstacles */}
-          {g.obs.map(o => (
+          {s.obs.map(o => (
             <Text key={o.id} style={{ position: "absolute", left: o.x, top: GY - o.h + 6, fontSize: 36 }}>
               {o.emoji}
             </Text>
           ))}
 
-          {/* START screen */}
-          {g.phase === "start" && (
-            <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(240,237,230,0.88)", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          {/* START overlay — pointerEvents none so Pressable gets the tap */}
+          {s.phase === "start" && (
+            <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(240,237,230,0.88)", alignItems: "center", justifyContent: "center" }}>
               <Text style={{ fontSize: 26, fontWeight: "900", color: "#00c8b4" }}>PERRO</Text>
               <Text style={{ fontSize: 26, fontWeight: "900", color: "#a0602c" }}>CORREDOR</Text>
-              <Text style={{ fontSize: 12, color: "#666", marginTop: 8 }}>TAP PARA CORRER</Text>
-              <Text style={{ fontSize: 10, color: "#00c8b4", marginTop: 4 }}>200pts = cupón de descuento</Text>
+              <Text style={{ fontSize: 12, color: "#666", marginTop: 10 }}>TAP PARA CORRER</Text>
+              <Text style={{ fontSize: 10, color: "#00c8b4", marginTop: 4 }}>200 pts = cupón de descuento</Text>
             </View>
           )}
 
-          {/* DEAD screen */}
-          {g.phase === "dead" && !couponResult && (
-            <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(20,10,10,0.65)", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          {/* DEAD overlay — pointerEvents none */}
+          {s.phase === "dead" && (
+            <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(20,10,10,0.62)", alignItems: "center", justifyContent: "center" }}>
               <Text style={{ fontSize: 20, fontWeight: "900", color: "#ff4466" }}>¡OH NO!</Text>
-              <Text style={{ fontSize: 20, fontWeight: "800", color: "#ffcc44" }}>{Math.floor(g.score)} PTS</Text>
-              {Math.floor(g.score) >= topScore && topScore > 0 && (
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#00c8b4" }}>¡NUEVO RÉCORD!</Text>
+              <Text style={{ fontSize: 20, fontWeight: "800", color: "#ffcc44", marginTop: 4 }}>{Math.floor(s.score)} PTS</Text>
+              {Math.floor(s.score) > topScore && topScore > 0 && (
+                <Text style={{ fontSize: 11, fontWeight: "700", color: "#00c8b4", marginTop: 2 }}>¡NUEVO RÉCORD!</Text>
               )}
-              <Text style={{ fontSize: 10, color: "#ddd", marginTop: 4 }}>TAP PARA INTENTAR OTRA VEZ</Text>
+              <Text style={{ fontSize: 10, color: "#ddd", marginTop: 8 }}>TAP PARA INTENTAR OTRA VEZ</Text>
             </View>
           )}
+
         </View>
       </Pressable>
 
       {/* Score tiers */}
       <View style={{ flexDirection: "row", gap: 8, marginHorizontal: 12, marginTop: 10 }}>
-        {[{ pts: "200+", pct: "5%", bg: "#fef3c7", text: "#d97706" }, { pts: "500+", pct: "10%", bg: "#ffedd5", text: "#f97316" }, { pts: "1000+", pct: "15%", bg: "#fee2e2", text: "#dc2626" }].map(({ pts, pct, bg, text }) => (
+        {[
+          { pts: "200+", pct: "5%",  bg: "#fef3c7", text: "#d97706" },
+          { pts: "500+", pct: "10%", bg: "#ffedd5", text: "#f97316" },
+          { pts: "1000+",pct: "15%", bg: "#fee2e2", text: "#dc2626" },
+        ].map(({ pts, pct, bg, text }) => (
           <View key={pts} style={{ flex: 1, backgroundColor: bg, borderRadius: 10, padding: 10, alignItems: "center" }}>
             <Text style={{ fontSize: 15, fontWeight: "800", color: text }}>{pct}</Text>
             <Text style={{ fontSize: 11, color: text, marginTop: 2 }}>{pts} pts</Text>
@@ -306,7 +318,6 @@ export default function GameScreen() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 12, gap: 10 }} showsVerticalScrollIndicator={false}>
-
         {topScore > 0 && (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 12, padding: 12 }}>
             <Trophy size={18} color="#fbbf24" />
@@ -368,7 +379,7 @@ export default function GameScreen() {
               </>
             )}
             <View style={{ flexDirection: "row", gap: 10, width: "100%", marginTop: 4 }}>
-              <Pressable onPress={handleRestart} style={{ flex: 1, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: "#e5e7eb", alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}>
+              <Pressable onPress={startNew} style={{ flex: 1, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: "#e5e7eb", alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}>
                 <RotateCcw size={14} color="#374151" />
                 <Text style={{ fontWeight: "600", color: "#374151" }}>Otra vez</Text>
               </Pressable>
