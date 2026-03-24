@@ -126,13 +126,14 @@ export default async function ServicesPage({
       </div>
 
       {/* Type filters */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
         {[
           { key: "", label: "Todos", icon: "🐾", color: "bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-950/30 dark:border-orange-800", active: "bg-orange-500 border-orange-500 text-white" },
           { key: "WALK", label: "Paseo", icon: "🐕", color: "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/30 dark:border-blue-800", active: "bg-blue-500 border-blue-500 text-white" },
           { key: "CARE", label: "Cuidado & Hospedaje", icon: "🏡", color: "bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-950/30 dark:border-purple-800", active: "bg-purple-500 border-purple-500 text-white" },
           { key: "GROOMING", label: "Grooming", icon: "✂️", color: "bg-pink-50 border-pink-200 text-pink-700 dark:bg-pink-950/30 dark:border-pink-800", active: "bg-pink-500 border-pink-500 text-white" },
           { key: "INSURANCE", label: "Seguros", icon: "🛡️", color: "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/30 dark:border-blue-800", active: "bg-blue-700 border-blue-700 text-white" },
+          { key: "TRAINING", label: "Adiestramiento", icon: "🎓", color: "bg-green-50 border-green-200 text-green-700 dark:bg-green-950/30 dark:border-green-800", active: "bg-green-600 border-green-600 text-white" },
         ].map(({ key, label, icon, color, active }) => {
           const isActive = key === "" ? !type : type === key;
           const href = key === "" ? "/services" : `/services?type=${key}${city ? `&city=${city}` : ""}${verified ? `&verified=${verified}` : ""}`;
