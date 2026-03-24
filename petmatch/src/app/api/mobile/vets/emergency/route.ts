@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getMobileSession } from "@/lib/mobile/auth";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const session = await getMobileSession(req);
   if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
