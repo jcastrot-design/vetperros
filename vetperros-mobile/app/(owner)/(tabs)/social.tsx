@@ -56,7 +56,7 @@ function PostCard({ post, onLike, onComment }: { post: any; onLike: (id: string)
           contentFit="cover"
         />
         {post.mediaType === "VIDEO" && (
-          <View style={{ position: "absolute", inset: 0, alignItems: "center", justifyContent: "center" }}>
+          <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
             <View style={{ backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 36, padding: 14 }}>
               <Play size={28} color="#fff" fill="#fff" />
             </View>
