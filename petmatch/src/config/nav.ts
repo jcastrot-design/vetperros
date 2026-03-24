@@ -59,6 +59,7 @@ export const ownerNav: NavGroup[] = [
           { title: "Cuidado & Hospedaje", href: "/services?type=CARE", icon: Home },
           { title: "Grooming", href: "/services?type=GROOMING", icon: Stethoscope },
           { title: "Seguros", href: "/services?type=INSURANCE", icon: Shield },
+          { title: "Adiestramiento", href: "/services?type=TRAINING", icon: Star },
         ],
       },
       {
