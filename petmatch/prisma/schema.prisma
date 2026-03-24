@@ -1034,6 +1034,7 @@ model FeedPost {
   mediaUrl     String
   mediaType    String   @default("PHOTO") // PHOTO | VIDEO
   thumbnailUrl String?
+  mediaData    String?  @db.Text  // base64 encoded for small images
   petId        String?
   likesCount   Int      @default(0)
   commentsCount Int     @default(0)

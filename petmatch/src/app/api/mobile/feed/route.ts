@@ -66,9 +66,10 @@ export async function POST(req: NextRequest) {
   if (!session) return corsJson({ error: "No autenticado" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
-  if (!body?.mediaUrl) return corsJson({ error: "mediaUrl requerido" }, { status: 400 });
+  if (!body?.mediaData && !body?.mediaUrl)
+    return corsJson({ error: "mediaData o mediaUrl requerido" }, { status: 400 });
 
-  const { mediaUrl, mediaType = "PHOTO", caption, petId, thumbnailUrl } = body;
+  const { mediaData, mediaUrl, mediaType = "PHOTO", caption, petId } = body;
 
   if (!["PHOTO", "VIDEO"].includes(mediaType))
     return corsJson({ error: "mediaType inválido" }, { status: 400 });
@@ -80,15 +81,26 @@ export async function POST(req: NextRequest) {
       return corsJson({ error: "Mascota no encontrada" }, { status: 404 });
   }
 
+  // Create post first to get ID
   const post = await prisma.feedPost.create({
     data: {
       authorId: session.id,
-      mediaUrl,
+      mediaUrl: mediaUrl ?? "", // temp, updated below if using mediaData
       mediaType,
-      thumbnailUrl: thumbnailUrl ?? null,
       caption: caption?.trim() ?? null,
       petId: petId ?? null,
+      mediaData: mediaData ?? null,
     },
+  });
+
+  // If using self-hosted storage, update mediaUrl to our serving endpoint
+  const finalMediaUrl = mediaData
+    ? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://petmatch-ashy.vercel.app"}/api/mobile/feed/${post.id}/media`
+    : mediaUrl;
+
+  const updated = await prisma.feedPost.update({
+    where: { id: post.id },
+    data: { mediaUrl: finalMediaUrl },
     select: {
       id: true, mediaUrl: true, mediaType: true, caption: true,
       createdAt: true, likesCount: true, commentsCount: true,
@@ -97,5 +109,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return corsJson({ data: { ...post, isLikedByMe: false } }, { status: 201 });
+  return corsJson({ data: { ...updated, isLikedByMe: false } }, { status: 201 });
 }
