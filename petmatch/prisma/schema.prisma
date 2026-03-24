@@ -176,6 +176,7 @@ model Pet {
   bookings           Booking[]
   adoptionPost       AdoptionPost?
   insurancePolicies  InsurancePolicy[]
+  feedPosts          FeedPost[]
 
   @@map("pets")
 }
@@ -1043,6 +1044,7 @@ model FeedPost {
   updatedAt    DateTime @updatedAt
 
   author   User          @relation("FeedPostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  pet      Pet?          @relation(fields: [petId], references: [id], onDelete: SetNull)
   likes    FeedLike[]
   comments FeedComment[]
 
