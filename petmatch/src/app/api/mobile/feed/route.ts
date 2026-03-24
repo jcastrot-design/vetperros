@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       likesCount: true,
       commentsCount: true,
       createdAt: true,
-      author: { select: { id: true, name: true, image: true } },
+      author: { select: { id: true, name: true, avatarUrl: true } },
       pet: { select: { id: true, name: true, species: true } },
     },
   });
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     select: {
       id: true, mediaUrl: true, mediaType: true, caption: true,
       createdAt: true, likesCount: true, commentsCount: true,
-      author: { select: { id: true, name: true, image: true } },
+      author: { select: { id: true, name: true, avatarUrl: true } },
       pet: { select: { id: true, name: true, species: true } },
     },
   });

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ post
       id: true,
       content: true,
       createdAt: true,
-      author: { select: { id: true, name: true, image: true } },
+      author: { select: { id: true, name: true, avatarUrl: true } },
     },
   });
 
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pos
       data: { postId, authorId: session.id, content: body.content.trim() },
       select: {
         id: true, content: true, createdAt: true,
-        author: { select: { id: true, name: true, image: true } },
+        author: { select: { id: true, name: true, avatarUrl: true } },
       },
     }),
     prisma.feedPost.update({ where: { id: postId }, data: { commentsCount: { increment: 1 } } }),
