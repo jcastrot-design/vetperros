@@ -69,7 +69,7 @@ export function SwipeCard({ pet, onSwipe, isTop }: SwipeCardProps) {
           </motion.div>
 
           {/* Info overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-16">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-20 pb-10">
             <h3 className="text-2xl font-bold text-white">
               {pet.name}
               {pet.age && (
