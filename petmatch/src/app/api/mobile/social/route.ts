@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       take: 10,
       select: {
         id: true,
-        petName: true,
+        name: true,
         species: true,
         status: true,
         city: true,

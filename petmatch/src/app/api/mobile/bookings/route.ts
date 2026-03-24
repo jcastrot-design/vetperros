@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       service: {
         select: { title: true, type: true, pricePerUnit: true, provider: { select: { name: true, avatarUrl: true } } },
       },
-      pet: { select: { name: true, species: true, avatarUrl: true } },
+      pet: { select: { name: true, species: true } },
     },
     orderBy: { startDate: "desc" },
     take: 50,

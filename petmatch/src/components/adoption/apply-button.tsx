@@ -96,7 +96,7 @@ export function ApplyButton({ postId, petName }: ApplyButtonProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tipo de vivienda</Label>
-                <Select value={housing} onValueChange={setHousing}>
+                <Select value={housing} onValueChange={(v) => setHousing(v ?? "")}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>

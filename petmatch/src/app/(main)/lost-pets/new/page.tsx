@@ -100,7 +100,7 @@ export default function NewLostPetPage() {
 
             <div className="space-y-2">
               <Label>Tamaño</Label>
-              <Select value={size} onValueChange={setSize}>
+              <Select value={size} onValueChange={(v) => setSize(v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="SMALL">Pequeño</SelectItem>

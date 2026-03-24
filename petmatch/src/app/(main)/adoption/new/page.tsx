@@ -149,7 +149,7 @@ export default function NewAdoptionPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tamaño</Label>
-                <Select value={size} onValueChange={setSize}>
+                <Select value={size} onValueChange={(v) => setSize(v ?? "")}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -163,7 +163,7 @@ export default function NewAdoptionPage() {
               </div>
               <div className="space-y-2">
                 <Label>Edad aproximada</Label>
-                <Select value={approximateAge} onValueChange={setApproximateAge}>
+                <Select value={approximateAge} onValueChange={(v) => setApproximateAge(v ?? "")}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -201,7 +201,7 @@ export default function NewAdoptionPage() {
             {/* Motivo */}
             <div className="space-y-2">
               <Label>Motivo de la adopción</Label>
-              <Select value={reason} onValueChange={setReason}>
+              <Select value={reason} onValueChange={(v) => setReason(v ?? "")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

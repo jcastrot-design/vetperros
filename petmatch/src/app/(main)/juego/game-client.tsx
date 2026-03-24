@@ -734,9 +734,9 @@ export function GameClient({ serverTopScore }: { serverTopScore: number }) {
               <Button onClick={handleRestart} variant="outline" className="flex-1" size="sm">
                 <RotateCcw className="h-3 w-3 mr-1" /> Otra vez
               </Button>
-              <Button asChild className="flex-1 bg-orange-500 hover:bg-orange-600" size="sm">
-                <Link href="/marketplace/checkout">Usar cupón</Link>
-              </Button>
+              <Link href="/marketplace/checkout" className="flex-1">
+                <Button className="w-full bg-orange-500 hover:bg-orange-600" size="sm">Usar cupón</Button>
+              </Link>
             </div>
           </div>
         </div>

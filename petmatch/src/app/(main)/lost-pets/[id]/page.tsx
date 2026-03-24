@@ -28,9 +28,9 @@ export default async function LostPetDetailPage({ params }: { params: Promise<{ 
   const post = await prisma.lostPet.findUnique({
     where: { id },
     include: {
-      owner: { select: { id: true, name: true, image: true } },
+      owner: { select: { id: true, name: true, avatarUrl: true } },
       sightings: {
-        include: { reporter: { select: { name: true, image: true } } },
+        include: { reporter: { select: { name: true, avatarUrl: true } } },
         orderBy: { createdAt: "desc" },
         take: 20,
       },

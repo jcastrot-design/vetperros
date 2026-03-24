@@ -31,7 +31,7 @@ export function ReportSightingButton({ lostPetId }: { lostPetId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      <DialogTrigger>
         <Button className="w-full bg-amber-500 hover:bg-amber-600">
           <MessageCircle className="h-4 w-4 mr-2" />
           Reportar avistamiento

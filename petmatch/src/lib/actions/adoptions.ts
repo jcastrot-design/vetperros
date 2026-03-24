@@ -51,7 +51,8 @@ export async function createRescuedAdoptionPost(data: {
       name: data.petName.trim(),
       species: data.species,
       breed: data.breed?.trim() || null,
-      size: data.size || null,
+      size: data.size ?? "MEDIUM",
+      energyLevel: "MEDIUM",
       dateOfBirth: dateOfBirth || null,
       isVaccinated: data.isVaccinated,
       isNeutered: data.isNeutered,
@@ -100,7 +101,7 @@ export async function createAdoptionPost(formData: unknown) {
     data: {
       ...parsed.data,
       posterId: session.user.id,
-      city: parsed.data.city || pet.owner?.city || undefined,
+      city: parsed.data.city || undefined,
     },
   });
 

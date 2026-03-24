@@ -10,7 +10,7 @@ import type { Prisma } from "@/generated/prisma/client";
 export type InsurancePolicyWithRelations = Prisma.InsurancePolicyGetPayload<{
   include: {
     plan: { select: { name: true; providerName: true; coverages: true } };
-    pet:  { select: { name: true; species: true; avatarUrl: true } };
+    pet:  { select: { name: true; species: true } };
   };
 }>;
 
@@ -218,7 +218,7 @@ export async function getMyInsurancePolicies(): Promise<InsurancePolicyWithRelat
     where: { userId: session.user.id },
     include: {
       plan: { select: { name: true, providerName: true, coverages: true } },
-      pet:  { select: { name: true, species: true, avatarUrl: true } },
+      pet:  { select: { name: true, species: true } },
     },
     orderBy: { createdAt: "desc" },
   });

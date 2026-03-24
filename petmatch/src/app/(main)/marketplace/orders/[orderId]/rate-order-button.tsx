@@ -32,7 +32,7 @@ export function RateOrderButton({ orderId }: { orderId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      <DialogTrigger>
         <Button className="w-full bg-green-500 hover:bg-green-600">
           <PackageCheck className="h-4 w-4 mr-2" />
           Confirmar recepción y calificar
