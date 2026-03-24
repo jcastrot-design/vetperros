@@ -480,7 +480,7 @@ class UI {
     ctx.fillStyle = "#666"; ctx.font = `8px ${font}`;
     if (Math.floor(t * 2) % 2 === 0) ctx.fillText("ESPACIO / TAP PARA CORRER!", W / 2, H / 2 + 20);
     ctx.fillStyle = COLORS.accent; ctx.font = `6px ${font}`;
-    ctx.fillText("© VETPERROS — 200pts = cupón de descuento", W / 2, H - 12);
+    ctx.fillText("© VETPERROS — 200pts = cupón · máx. $5.000 CLP", W / 2, H - 12);
   }
   private _drawDead(ctx: CanvasRenderingContext2D, score: number, hiScore: number) {
     const font = "'Press Start 2P', monospace";
@@ -718,7 +718,7 @@ export function GameClient({ serverTopScore }: { serverTopScore: number }) {
                   <p className="text-xl font-bold font-mono text-orange-600 tracking-wider">{couponResult.code}</p>
                   <p className="text-sm text-orange-700 dark:text-orange-400 mt-1 font-semibold">{couponResult.discount}% de descuento</p>
                 </div>
-                <p className="text-xs text-muted-foreground">Válido 7 días. Úsalo al pagar en marketplace.</p>
+                <p className="text-xs text-muted-foreground">Válido 7 días · Descuento máx. $5.000 CLP · Úsalo al pagar en marketplace.</p>
               </>
             ) : couponResult.type === "alreadyEarned" ? (
               <>
