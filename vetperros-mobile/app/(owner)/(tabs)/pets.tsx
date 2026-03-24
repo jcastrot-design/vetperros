@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
@@ -11,9 +11,14 @@ const SPECIES_EMOJI: Record<string, string> = {
 };
 
 export default function Pets() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch, isRefetching, error } = useQuery({
     queryKey: ["pets"],
-    queryFn: () => api.get("/mobile/pets").then(r => r.data.data),
+    queryFn: async () => {
+      const res = await api.get("/mobile/pets");
+      return res.data.data;
+    },
+    staleTime: 0,
+    retry: false,
   });
 
   const pets = data ?? [];
@@ -34,8 +39,23 @@ export default function Pets() {
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator color="#f97316" />
         </View>
+      ) : error ? (
+        <ScrollView
+          contentContainerStyle={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#f97316" />}
+        >
+          <Text style={{ fontSize: 14, color: "#dc2626", textAlign: "center", fontFamily: "monospace" }}>
+            {(error as any)?.response?.status} {JSON.stringify((error as any)?.response?.data ?? (error as any)?.message)}
+          </Text>
+          <Pressable onPress={() => refetch()} style={{ marginTop: 16, backgroundColor: "#f97316", borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 }}>
+            <Text style={{ color: "#fff", fontWeight: "600" }}>Reintentar</Text>
+          </Pressable>
+        </ScrollView>
       ) : pets.length === 0 ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
+        <ScrollView
+          contentContainerStyle={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#f97316" />}
+        >
           <Text style={{ fontSize: 56 }}>🐾</Text>
           <Text style={{ fontSize: 18, fontWeight: "700", color: "#111827", marginTop: 16 }}>Sin mascotas aún</Text>
           <Text style={{ color: "#6b7280", marginTop: 8, textAlign: "center" }}>Agrega tu primera mascota para comenzar</Text>
@@ -45,9 +65,14 @@ export default function Pets() {
           >
             <Text style={{ color: "#fff", fontWeight: "600" }}>+ Agregar mascota</Text>
           </Pressable>
-        </View>
+        </ScrollView>
       ) : (
-        <ScrollView style={{ flex: 1, padding: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+        <ScrollView
+          style={{ flex: 1, padding: 16 }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ gap: 12 }}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#f97316" />}
+        >
           {pets.map((pet: any) => (
             <Pressable
               key={pet.id}

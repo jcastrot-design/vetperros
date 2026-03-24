@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { api } from "@/lib/api/client";
 import { useAuthStore } from "@/stores/auth-store";
-import { Bell, Search, ChevronRight } from "lucide-react-native";
+import { Bell, MessageCircle, ChevronRight } from "lucide-react-native";
 
 const SPECIES_EMOJI: Record<string, string> = {
   DOG: "🐶", CAT: "🐱", BIRD: "🐦", RABBIT: "🐰", DEFAULT: "🐾",
@@ -79,11 +79,18 @@ export default function DashboardScreen() {
             <Text style={{ fontSize: 13, color: "#6b7280" }}>Bienvenido 👋</Text>
             <Text style={{ fontSize: 20, fontWeight: "800", color: "#111827" }}>{session?.name}</Text>
           </View>
-          <Link href="/(owner)/notifications" asChild>
-            <Pressable style={{ width: 40, height: 40, backgroundColor: "#fff", borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#e5e7eb" }}>
-              <Bell size={20} color="#6b7280" />
-            </Pressable>
-          </Link>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Link href="/(owner)/(tabs)/chat" asChild>
+              <Pressable style={{ width: 40, height: 40, backgroundColor: "#fff", borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#e5e7eb" }}>
+                <MessageCircle size={20} color="#6b7280" />
+              </Pressable>
+            </Link>
+            <Link href="/(owner)/notifications" asChild>
+              <Pressable style={{ width: 40, height: 40, backgroundColor: "#fff", borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#e5e7eb" }}>
+                <Bell size={20} color="#6b7280" />
+              </Pressable>
+            </Link>
+          </View>
         </View>
 
         {/* Stats */}

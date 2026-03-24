@@ -64,6 +64,14 @@ export default function OwnerLayout() {
         name="game"
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="match"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="new-feed-post"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }

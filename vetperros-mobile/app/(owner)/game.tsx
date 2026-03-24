@@ -283,6 +283,7 @@ export default function GameScreen() {
           <View key={pts} style={{ flex: 1, backgroundColor: bg, borderRadius: 10, padding: 10, alignItems: "center" }}>
             <Text style={{ fontSize: 15, fontWeight: "800", color: c }}>{pct}</Text>
             <Text style={{ fontSize: 11, color: c, marginTop: 2 }}>{pts} pts</Text>
+            <Text style={{ fontSize: 9, color: c, marginTop: 1, opacity: 0.8 }}>máx. $5.000</Text>
           </View>
         ))}
       </View>
@@ -321,7 +322,7 @@ export default function GameScreen() {
         )}
 
         <Text style={{ fontSize: 11, color: "#4b5563", textAlign: "center" }}>
-          Máx. 1 cupón/día · Válido 7 días · Úsalo en el marketplace
+          Máx. 1 cupón/día · Válido 7 días · Descuento máx. $5.000 CLP · Úsalo en el marketplace
         </Text>
       </ScrollView>
 
@@ -338,7 +339,7 @@ export default function GameScreen() {
                   <Text style={{ fontSize: 22, fontWeight: "800", color: "#f97316", letterSpacing: 2 }}>{couponResult.code}</Text>
                   <Text style={{ fontSize: 14, color: "#ea580c", fontWeight: "600", marginTop: 4 }}>{couponResult.discount}% de descuento</Text>
                 </View>
-                <Text style={{ fontSize: 11, color: "#9ca3af", textAlign: "center" }}>Válido 7 días · úsalo en el marketplace</Text>
+                <Text style={{ fontSize: 11, color: "#9ca3af", textAlign: "center" }}>Válido 7 días · Descuento máx. $5.000 CLP · úsalo en el marketplace</Text>
               </>
             ) : (
               <>

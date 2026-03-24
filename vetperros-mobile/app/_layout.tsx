@@ -1,6 +1,6 @@
 import "../global.css";
 import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Toast from "react-native-toast-message";
@@ -17,11 +17,18 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
-  const { loadSession } = useAuthStore();
+  const { loadSession, session, loading } = useAuthStore();
 
   useEffect(() => {
     loadSession();
   }, []);
+
+  // When session is cleared (e.g. 401), redirect to signin
+  useEffect(() => {
+    if (!loading && !session) {
+      router.replace("/(auth)/signin");
+    }
+  }, [session, loading]);
 
   const content = (
     <QueryClientProvider client={queryClient}>

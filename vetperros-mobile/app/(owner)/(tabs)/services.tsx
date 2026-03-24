@@ -16,16 +16,19 @@ const CATEGORIES = [
   { key: "SITTING",   icon: "🤝", label: "Cuidado"     },
   { key: "BOARDING",  icon: "🛏️", label: "Alojamiento" },
   { key: "INSURANCE", icon: "🛡️", label: "Seguros"     },
+  { key: "TRAINING",  icon: "🎓", label: "Adiestramiento" },
 ];
 
 const TYPE_EMOJI: Record<string, string> = {
   WALK: "🦮", GROOMING: "✂️", VET_HOME: "🏥",
   DAYCARE: "🏠", SITTING: "🤝", BOARDING: "🛏️",
+  TRAINING: "🎓",
 };
 
 const TYPE_LABEL: Record<string, string> = {
   WALK: "Paseo", GROOMING: "Grooming", VET_HOME: "Veterinaria",
   DAYCARE: "Guardería", SITTING: "Cuidado", BOARDING: "Alojamiento",
+  TRAINING: "Adiestramiento",
 };
 
 export default function Services() {
@@ -39,6 +42,7 @@ export default function Services() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const showInsurance = activeType === "INSURANCE";
+  const showTraining = activeType === "TRAINING";
 
   const { data: servicesData, isLoading: loadingServices } = useQuery({
     queryKey: ["services", activeType, search],
@@ -117,12 +121,12 @@ export default function Services() {
           </View>
 
           {/* Banner */}
-          <View style={{ backgroundColor: showInsurance ? "#1e40af" : "#f97316", borderRadius: 16, padding: 20, marginBottom: 20 }}>
+          <View style={{ backgroundColor: showInsurance ? "#1e40af" : showTraining ? "#16a34a" : "#f97316", borderRadius: 16, padding: 20, marginBottom: 20 }}>
             <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>
-              {showInsurance ? "🛡️ Protege a tu mascota" : "🐶 Servicios para tu mascota"}
+              {showInsurance ? "🛡️ Protege a tu mascota" : showTraining ? "🎓 Escuelas de adiestramiento" : "🐶 Servicios para tu mascota"}
             </Text>
             <Text style={{ color: "#fff9", fontSize: 13, marginTop: 4 }}>
-              {showInsurance ? "Seguros con cobertura real para tu compañero" : "Paseos, grooming, veterinaria y más"}
+              {showInsurance ? "Seguros con cobertura real para tu compañero" : showTraining ? "Obediencia, agility, modificación de conducta y más" : "Paseos, grooming, veterinaria y más"}
             </Text>
             <Pressable
               onPress={() => setActiveType(null)}
@@ -146,12 +150,12 @@ export default function Services() {
                 }}
                 style={{
                   backgroundColor: activeType === c.key ? "#fff7ed" : "#fff",
-                  borderRadius: 12, padding: 12, alignItems: "center", width: "30%",
+                  borderRadius: 12, paddingVertical: 10, paddingHorizontal: 6, alignItems: "center", width: "30%",
                   borderWidth: 1, borderColor: activeType === c.key ? "#f97316" : "#f3f4f6",
                 }}
               >
                 <Text style={{ fontSize: 24 }}>{c.icon}</Text>
-                <Text style={{ fontSize: 12, color: activeType === c.key ? "#f97316" : "#374151", fontWeight: "600", marginTop: 4 }}>
+                <Text style={{ fontSize: 11, color: activeType === c.key ? "#f97316" : "#374151", fontWeight: "600", marginTop: 4, textAlign: "center" }} numberOfLines={2} adjustsFontSizeToFit>
                   {c.label}
                 </Text>
               </Pressable>

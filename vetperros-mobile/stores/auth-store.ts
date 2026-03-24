@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api } from "@/lib/api/client";
+import { api, registerSignOutCallback } from "@/lib/api/client";
 import { getItem, setItem, deleteItem } from "@/lib/storage";
 
 type UserRole = "OWNER" | "WALKER" | "VET" | "CLINIC" | "ADMIN";
@@ -20,7 +20,11 @@ type AuthState = {
   signOut: () => Promise<void>;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set) => {
+  // When API returns 401, clear session so _layout redirects to signin
+  registerSignOutCallback(() => set({ session: null }));
+
+  return {
   session: null,
   loading: true,
 
@@ -59,4 +63,5 @@ export const useAuthStore = create<AuthState>((set) => ({
     await deleteItem("session_user");
     set({ session: null });
   },
-}));
+  };
+});

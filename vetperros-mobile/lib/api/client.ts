@@ -1,12 +1,18 @@
 import axios from "axios";
 import { getItem, deleteItem } from "@/lib/storage";
 
+// Registered by auth store to clear session on 401
+let onSignOut: (() => void) | null = null;
+export function registerSignOutCallback(cb: () => void) {
+  onSignOut = cb;
+}
+
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000/api";
 
 export const api = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,
-  headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "application/json", "bypass-tunnel-reminder": "true" },
 });
 
 api.interceptors.request.use(async (config) => {
@@ -23,6 +29,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       await deleteItem("session_token");
       await deleteItem("session_user");
+      onSignOut?.();
     }
     return Promise.reject(error);
   }
